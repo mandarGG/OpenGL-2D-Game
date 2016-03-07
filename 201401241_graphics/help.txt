@@ -1,0 +1,15 @@
+type make to compile the code and ./angry-birds to run the executable
+Controls:
+Keyboard - a 	: decrease cannon angle
+	   b 	: increase cannon angle
+	   f 	: increase power
+	   s 	: decrease power 
+	   space : shoot bird
+           r:reload game
+           esc: quit game
+Mouse -	scroll	 	: increase/decrease power
+	left click 	: decrease cannon angle
+	right click 	: increase cannon angle
+
+ Unfinished levels get reloaded.
+  

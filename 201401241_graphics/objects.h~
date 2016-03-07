@@ -1,0 +1,357 @@
+#include <iostream>
+
+#ifdef __APPLE__
+#include <OpenGL/OpenGL.h>
+#include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
+#endif
+
+#include "soil/SOIL.h"
+#include "phy.h"
+using namespace std;
+
+#ifndef OBJECT_LOADER_H
+#define OBJECT_LOADER_H
+
+GLuint eyes_open, eyes_closed, wheel1, wheel2, troll;
+
+void texParams1() {
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+}
+
+GLuint loadImage1(string fileName) {
+	GLuint tex_ID;
+
+	tex_ID = SOIL_load_OGL_texture(
+		fileName.c_str(),
+		SOIL_LOAD_AUTO,
+		SOIL_CREATE_NEW_ID,
+		SOIL_FLAG_POWER_OF_TWO
+		| SOIL_FLAG_MIPMAPS
+		| SOIL_FLAG_MULTIPLY_ALPHA
+		| SOIL_FLAG_COMPRESS_TO_DXT
+		| SOIL_FLAG_DDS_LOAD_DIRECT
+		| SOIL_FLAG_INVERT_Y
+		);
+
+	if( tex_ID > 0 ) {
+		glEnable( GL_TEXTURE_2D );
+		glBindTexture( GL_TEXTURE_2D, tex_ID );
+
+		return tex_ID;
+	}
+	else {
+		cout << "Bad image" << endl;
+		return 0;
+	}
+}
+
+class Bird {
+public:
+	float r;				//radius
+	Vector3D pos;			//position in space
+	Vector3D vel;			//velocoty
+		
+	Bird(float x=0, float y=0, float z=0, float r=1) {
+		this->r = r;
+		this->pos.x = x;
+		this->pos.y = y;
+		this->pos.z = z;
+		eyes_open = loadImage1(string("images/eyes_open.png"));
+		eyes_closed = loadImage1(string("images/eyes_closed.png"));
+	}
+
+	void draw() {
+		glPushMatrix();
+		glTranslatef(pos.x, pos.y, 0.0f);
+		glScalef(0.1*r, 0.1*r, 0.0f);
+
+		//tail
+		glPushMatrix();
+
+		glRotatef(-145, 0.0f, 0.0f, 1.0f);
+		glTranslatef(8.0f, 0.0f, 0.0f);
+		glColor3f(0.0f, 0.0f, 0.4f);
+		glBegin(GL_TRIANGLES);
+		glVertex2f(0.0f, 0.0f);
+		glVertex2f(5.0f, 3.0f);
+		glVertex2f(5.0f, -3.0f);
+		glEnd();
+		glPopMatrix();
+
+		//hair
+		glPushMatrix();
+		glRotatef(80, 0.0f, 0.0f, 1.0f);
+		glTranslatef(8.5f, 0.0f, 0.0f);
+		glColor3f(0.0f, 0.0f, 0.5f);
+		glBegin(GL_TRIANGLES);
+		glVertex2f(0.0f, 0.0f);
+		glVertex2f(0.0f, -5.0f);
+		glVertex2f(9.0f, 3.0f);
+		glEnd();
+		glPopMatrix();
+
+		glPushMatrix();
+		glRotatef(95, 0.0f, 0.0f, 1.0f);
+		glTranslatef(8.5f, 0.0f, 0.0f);
+		glColor3f(0.0f, 0.0f, 0.4f);
+		glScalef(0.7f,0.7f,0.7f);
+		glBegin(GL_TRIANGLES);
+		glVertex2f(0.0f, 0.0f);
+		glVertex2f(0.0f, -5.0f);
+		glVertex2f(9.0f, 3.0f);
+		glEnd();
+		glPopMatrix();
+
+		glPushMatrix();
+		glRotatef(105, 0.0f, 0.0f, 1.0f);
+		glTranslatef(8.5f, 0.0f, 0.0f);
+		glColor3f(0.0f, 0.0f, 0.3f);
+		glScalef(0.5f,0.5f,0.5f);
+		glBegin(GL_TRIANGLES);
+		glVertex2f(0.0f, 0.0f);
+		glVertex2f(0.0f, -5.0f);
+		glVertex2f(9.0f, 3.0f);
+		glEnd();
+		glPopMatrix();
+
+		//body_out
+		glBegin(GL_TRIANGLE_FAN);
+		glColor3f(0.0f, 0.0f, 0.5f);
+		for(int i=0;i<360;i++) {
+			glVertex2f(10*cos(i*(3.14/180)),10*sin(i*(3.14/180)));
+		}
+		glEnd();
+
+		//body_in
+		glPushMatrix();
+		glTranslatef(5.0f, 1.0f, 0.0f);
+		glRotatef(10, 0.0f, 0.0f, 1.0f);
+		glBegin(GL_TRIANGLE_FAN);
+		glColor3f(0.94f, 0.9f, 0.7f);
+		for(int i=0;i<360;i++) {
+			glVertex2f(5*cos(i*(3.14/180)),7*sin(i*(3.14/180)));
+		}
+		glEnd();
+		glPopMatrix();
+
+		//eyes
+		glEnable(GL_TEXTURE_2D);
+		glPushMatrix();
+		glTranslatef(6.0f, 4.0f, 0.0f);
+		if(vel.x == 0 || (pos.x < -15)) glBindTexture(GL_TEXTURE_2D, eyes_open);
+		else glBindTexture(GL_TEXTURE_2D, eyes_closed);
+		texParams1();
+		glBegin(GL_QUADS);
+		glNormal3f(0.0f, 0.0f, 1.0f);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(-3.0f, -3.0f, 0.0f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(3.0f, -3.0f, 0.0f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(3.0f, 3.0f, 0.0f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(-3.0f, 3.0f, 0.0f);
+		glEnd();
+		glPopMatrix();
+		glDisable(GL_TEXTURE_2D);
+
+		//beak
+		glPushMatrix();
+		glRotatef(15, 0.0f, 0.0f, 1.0f);
+		glTranslatef(10.0f, 0.0f, 0.0f);
+		glColor3f(1.0f, 0.7f, 0.0f);
+		glBegin(GL_TRIANGLES);
+		glVertex2f(0.0f, 2.0f);
+		glVertex2f(3.0f, 0.0f);
+		glVertex2f(0.0f, -2.0f);
+		glEnd();
+		glPopMatrix();
+		glPopMatrix();
+	}
+	
+	void applyVel(Vector3D impulse) {
+		this->vel += impulse;					// The external force is added to the force of the mass
+	}
+
+	void simulate(float dt=0) {
+		if (vel.x < 0.001 && vel.y < 0.001) return;
+
+		vel.x -= 0.1; 
+			//(impulse / m) * dt;
+		vel.y -= 0.1;
+		pos += vel;// * dt;						// Change in position is added to the position.
+		// Change in position is velocity times the change in time
+		
+		draw();
+		simulate();
+	}
+};
+
+class Troll {
+public:
+	Vector3D pos;			//position in space
+	float r;
+	bool visible;
+	Troll(float x=0, float y=0, float z=0, float r=2) {
+		this->pos.x = x;
+		this->pos.y = y;
+		this->pos.z = z;
+		this->r = r;
+		troll = loadImage1(string("images/troll.png"));
+		visible = true;
+	}
+
+	void draw() {
+		glPushMatrix();
+		glTranslatef(pos.x, pos.y, 0.0f);
+		glScalef(0.1*r, 0.1*r, 0.0f);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, troll);
+		glBegin(GL_TRIANGLE_FAN);
+		for(int i=0;i<360;i++) {
+			glTexCoord2f(0.5+0.54*cos(i*(3.14/180)),0.5+0.54*sin(i*(3.14/180)));
+			glVertex2f(10*cos(i*(3.14/180)),10*sin(i*(3.14/180)));
+		}
+		glEnd();
+		glDisable(GL_TEXTURE_2D);
+		glPopMatrix();
+	}
+};
+
+class Stone {
+public:
+	Vector3D pos;			//position in space
+	Vector3D vel;			//velocoty
+	float side;
+	bool gravity;
+	Stone(float x=0, float y=0, float z=0, float s=4) {
+		this->pos.x = x;
+		this->pos.y = y;
+		this->pos.z = z;
+		this->side = s;
+		bool gravity = false;
+	}
+
+	void draw() {
+		glPushMatrix();
+		glTranslatef(pos.x, pos.y, 0.0);
+		glColor3f(1.0f, 0.0f, 0.0f);
+		glRectf(-2.0f, -2.0f, 2.0f, 2.0f);
+		glPopMatrix();
+	}
+};
+
+class Cannon {
+public:
+	float size, angle;
+	Vector3D pos;			//position in space
+	Vector3D vel;			//velocoty
+	Cannon(float x=0, float y=0, float z=0, float s = 2, float ang=-90) {
+		this->angle = ang;
+		this->size = s;
+		this->pos.x = x;
+		this->pos.y = y;
+		this->pos.z = z;
+		wheel2 = loadImage1(string("images/wagon_wheel.png"));
+		wheel1 = loadImage1(string("images/wagon_wheel.png"));
+	}
+
+	void draw() {
+		glPushMatrix();
+		glTranslatef(pos.x, pos.y, 0.0f);
+		glScalef(0.2*size, 0.2*size, 0.0f);
+		
+		//back_ wheel
+		glEnable(GL_TEXTURE_2D);
+		glPushMatrix();
+		glTranslatef(3.0f, -2.0f, 5.0f);
+		glBindTexture(GL_TEXTURE_2D, wheel2);
+		texParams1();
+		glBegin(GL_QUADS);
+		glNormal3f(0.0f, 0.0f, 1.0f);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(-6.0f, -6.0f, 0.0f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(6.0f, -6.0f, 0.0f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(6.0f, 6.0f, 0.0f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(-6.0f, 6.0f, 0.0f);
+		glEnd();
+		glPopMatrix();
+		glDisable(GL_TEXTURE_2D);
+		
+
+		//semicircle+smallcircle
+		glPushMatrix();
+		glRotatef(angle, 0.0f, 0.0f, 1.0f);
+		glColor3f(0.4f, 0.4f, 0.4f);
+		
+		glBegin(GL_TRIANGLE_FAN);
+		for(int i=0;i<360;i++) {
+			glVertex2f(5*cos(i*(3.14/180)),5*sin(i*(3.14/180)));
+		}
+		glEnd();
+
+		glPushMatrix();
+		glTranslatef(0.0f, -5.0 - 0.2*5.0, 0.0f);
+		glScalef(0.3f, 0.3f, 0.0f);
+		glBegin(GL_TRIANGLE_FAN);
+		for(int i=0;i<360;i++) {
+			glVertex2f(5*cos(i*(3.14/180)),5*sin(i*(3.14/180)));
+		}
+		glEnd();
+		glPopMatrix();
+
+		//Trapezoid
+		glPushMatrix();
+		glTranslatef(0,10,0);
+		glBegin(GL_QUADS);
+		glVertex2f(-5.0f, -10.0f);
+		glVertex2f(5.0f, -10.0f);
+		glVertex2f(3.0f, 10.0f);
+		glVertex2f(-3.0f, 10.0f);
+		glEnd();
+		glPopMatrix();
+		glPopMatrix();
+
+		//front_wheel
+		glEnable(GL_TEXTURE_2D);
+		glPushMatrix();
+		glTranslatef(2.0f, -3.0f, -5.0f);
+		glBindTexture(GL_TEXTURE_2D, wheel1);
+		texParams1();
+		glBegin(GL_QUADS);
+		glNormal3f(0.0f, 0.0f, 1.0f);
+		glTexCoord2f(0.0f, 0.0f);
+		glVertex3f(-6.0f, -6.0f, 0.0f);
+		glTexCoord2f(1.0f, 0.0f);
+		glVertex3f(6.0f, -6.0f, 0.0f);
+		glTexCoord2f(1.0f, 1.0f);
+		glVertex3f(6.0f, 7.0f, 0.0f);
+		glTexCoord2f(0.0f, 1.0f);
+		glVertex3f(-6.0f, 6.0f, 0.0f);
+		glEnd();
+		glDisable(GL_TEXTURE_2D);
+		glPopMatrix();
+		
+		glPopMatrix();
+	}
+
+	void rotate(float ang) {
+		this->angle += ang;
+		if (angle < -105) angle = -105;
+		if (angle > 0) angle = 0;
+		draw();
+	}
+};
+
+#endif

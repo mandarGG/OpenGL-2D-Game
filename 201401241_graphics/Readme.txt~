@@ -1,0 +1,10 @@
+My Shooting Game
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ The makefile compiles the code.
+ then type ./angry-birds (on terminal) to run the executable.
+ Code uses SOIL to load images in the screen and make the game a bit more interesting.
+ The needed SOIL files are present in the game directory itself.  
+ Go through help.txt to see the game instructions.
+
+
